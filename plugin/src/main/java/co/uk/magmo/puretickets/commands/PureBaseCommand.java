@@ -6,6 +6,7 @@ import co.aikar.commands.CommandIssuer;
 import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Dependency;
 import co.aikar.commands.annotation.HelpCommand;
+import co.uk.magmo.corn.spigot.locale.LocaleManager;
 import co.uk.magmo.puretickets.configuration.Config;
 import co.uk.magmo.puretickets.interactions.NotificationManager;
 import co.uk.magmo.puretickets.locale.Messages;
@@ -13,6 +14,7 @@ import co.uk.magmo.puretickets.tasks.TaskManager;
 import co.uk.magmo.puretickets.ticket.FutureTicket;
 import co.uk.magmo.puretickets.ticket.TicketManager;
 import co.uk.magmo.puretickets.ticket.TicketStatus;
+import co.uk.magmo.puretickets.user.User;
 import co.uk.magmo.puretickets.utilities.generic.ReplacementUtilities;
 import co.uk.magmo.puretickets.utilities.generic.TimeUtilities;
 import co.uk.magmo.puretickets.utilities.generic.UserUtilities;
@@ -31,6 +33,9 @@ public class PureBaseCommand extends BaseCommand {
     @Dependency
     protected TaskManager taskManager;
 
+    @Dependency
+    protected LocaleManager localeManager;
+
     @Default
     @HelpCommand
     public void onHelp(CommandSender sender, CommandHelp help) {
@@ -38,14 +43,14 @@ public class PureBaseCommand extends BaseCommand {
         help.showHelp();
     }
 
-    protected void processShowCommand(CommandIssuer issuer, FutureTicket future) {
+    protected void processShowCommand(User user, FutureTicket future) {
         taskManager.use()
                 .future(future)
                 .abortIfNull()
                 .asyncLast((ticket) -> {
                     String[] replacements = ReplacementUtilities.ticketReplacements(ticket);
 
-                    issuer.sendInfo(Messages.TITLES__SHOW_TICKET, replacements);
+                    user.message(Messages.TITLES__SHOW_TICKET, replacements);
                     issuer.sendInfo(Messages.SHOW__SENDER, replacements);
                     issuer.sendInfo(Messages.SHOW__MESSAGE, replacements);
 

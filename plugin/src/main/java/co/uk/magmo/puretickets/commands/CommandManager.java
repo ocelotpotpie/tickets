@@ -4,9 +4,10 @@ import co.aikar.commands.InvalidCommandArgument;
 import co.aikar.commands.MessageType;
 import co.aikar.commands.PaperCommandManager;
 import co.uk.magmo.corn.core.Lists;
+import co.uk.magmo.corn.spigot.locale.LocaleManager;
+import co.uk.magmo.corn.spigot.locale.LocaleUtils;
 import co.uk.magmo.puretickets.configuration.Config;
 import co.uk.magmo.puretickets.locale.Messages;
-import co.uk.magmo.puretickets.locale.TargetType;
 import co.uk.magmo.puretickets.storage.TimeAmount;
 import co.uk.magmo.puretickets.ticket.FutureTicket;
 import co.uk.magmo.puretickets.ticket.Message;
@@ -14,43 +15,43 @@ import co.uk.magmo.puretickets.ticket.MessageReason;
 import co.uk.magmo.puretickets.ticket.Ticket;
 import co.uk.magmo.puretickets.ticket.TicketManager;
 import co.uk.magmo.puretickets.ticket.TicketStatus;
-import co.uk.magmo.puretickets.utilities.generic.FileUtilities;
+import co.uk.magmo.puretickets.user.User;
 import co.uk.magmo.puretickets.utilities.generic.NumberUtilities;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class CommandManager extends PaperCommandManager {
+    private final LocaleManager localeManager;
+
     public CommandManager(Plugin plugin, Config config, TicketManager ticketManager) {
         super(plugin);
 
+        Map<Locale, FileConfiguration> locales = LocaleUtils.saveLocales(plugin,
+                new File(plugin.getDataFolder(), "locales"), "/locales");
+
+        localeManager = new LocaleManager(locales.get(Locale.ENGLISH), Messages.PREFIX);
+
+        localeManager.registerKeys(Messages.class);
+
         //noinspection deprecation
         enableUnstableAPI("help");
-        saveLocales();
-        loadLocales();
 
         // Colours
         setFormat(MessageType.HELP, ChatColor.WHITE, ChatColor.AQUA, ChatColor.DARK_GRAY);
         setFormat(MessageType.INFO, ChatColor.WHITE, ChatColor.AQUA, ChatColor.DARK_GRAY);
+
+        getCommandContexts().registerIssuerOnlyContext(User.class, c -> new User(c.getSender()));
 
         // Contexts
         getCommandContexts().registerOptionalContext(FutureTicket.class, c -> {
@@ -64,7 +65,7 @@ public class CommandManager extends PaperCommandManager {
 
                     if (ticket == null || (c.hasFlag("issuer") && !ticket.getPlayerUUID().equals(c.getPlayer().getUniqueId()))) {
                         future.complete(null);
-                        c.getIssuer().sendInfo(Messages.EXCEPTIONS__TICKET_NOT_FOUND);
+                        new User(c.getSender()).message(localeManager.composeMessage(Messages.EXCEPTIONS__TICKET_NOT_FOUND), true);
                         return;
                     }
 
@@ -95,7 +96,7 @@ public class CommandManager extends PaperCommandManager {
 
                 if (potentialTicket == null) {
                     future.complete(null);
-                    c.getIssuer().sendInfo(Messages.EXCEPTIONS__TICKET_NOT_FOUND);
+                    new User(c.getSender()).message(localeManager.composeMessage(Messages.EXCEPTIONS__TICKET_NOT_FOUND), true);
                     return;
                 }
 
@@ -184,78 +185,5 @@ public class CommandManager extends PaperCommandManager {
         registerCommand(new TicketCommand());
         registerCommand(new TicketsCommand());
         registerCommand(new PureTicketsCommand());
-    }
-
-    private void loadLocales() {
-        File[] files = new File(plugin.getDataFolder(), "locales").listFiles();
-
-        for (File file : files) {
-            String localeName = file.getName().replace(".yml", "");
-            Locale locale = Locale.forLanguageTag(localeName);
-
-            YamlConfiguration yamlConfiguration = new YamlConfiguration();
-
-            try {
-                yamlConfiguration.load(file);
-            } catch (InvalidConfigurationException | IOException e) {
-                Bukkit.getLogger().warning("Could not load locale file");
-                return;
-            }
-
-            List<TargetType> filteredTargets = Lists.filter(Arrays.asList(TargetType.values()), TargetType::getHasPrefix);
-            List<String> prefixables = Lists.map(filteredTargets, Enum::name);
-
-            prefixables.add("EXCEPTIONS");
-
-            String prefix = yamlConfiguration.getString("general.prefix");
-
-            for (String key : yamlConfiguration.getKeys(false)) {
-                if (prefixables.contains(key.toUpperCase())) {
-                    ConfigurationSection configurationSection = yamlConfiguration.getConfigurationSection(key);
-
-                    if (configurationSection == null) continue;
-
-                    configurationSection.getKeys(false).forEach(subKey -> {
-                        String path = key + "." + subKey;
-                        yamlConfiguration.set(path, prefix + yamlConfiguration.getString(path));
-                    });
-                }
-            }
-
-            addSupportedLanguage(locale);
-            locales.loadLanguage(yamlConfiguration, locale);
-        }
-    }
-
-    private void saveLocales() {
-        File localeFolder = new File(plugin.getDataFolder(), "locales");
-        URL folder = plugin.getClass().getResource("/locales/");
-
-        localeFolder.mkdirs();
-
-        try {
-            FileSystem fs = FileSystems.newFileSystem(folder.toURI(), new HashMap<>());
-
-            Files.walk(fs.getPath("/locales"))
-                    .filter(path -> path.toString().endsWith(".yml"))
-                    .forEach(path -> {
-                        File target = new File(localeFolder, path.getFileName().toString());
-                        InputStream stream = plugin.getClass().getResourceAsStream(path.toString());
-
-                        if (!target.exists()) {
-                            try {
-                                Files.copy(stream, target.getAbsoluteFile().toPath());
-                            } catch (IOException e) {
-                                Bukkit.getLogger().warning("Could not save locale file");
-                            }
-                        } else {
-                            FileUtilities.mergeYaml(stream, target);
-                        }
-                    });
-
-            fs.close();
-        } catch (IOException | URISyntaxException e) {
-            Bukkit.getLogger().warning("Could not save locale file");
-        }
     }
 }
