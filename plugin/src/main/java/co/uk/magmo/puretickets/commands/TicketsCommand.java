@@ -15,6 +15,7 @@ import co.uk.magmo.puretickets.storage.TimeAmount;
 import co.uk.magmo.puretickets.ticket.FutureTicket;
 import co.uk.magmo.puretickets.ticket.Ticket;
 import co.uk.magmo.puretickets.ticket.TicketStatus;
+import co.uk.magmo.puretickets.user.User;
 import co.uk.magmo.puretickets.utilities.Constants;
 import co.uk.magmo.puretickets.utilities.generic.ReplacementUtilities;
 import co.uk.magmo.puretickets.utilities.generic.UserUtilities;
@@ -36,8 +37,8 @@ public class TicketsCommand extends PureBaseCommand {
     @CommandPermission(Constants.STAFF_PERMISSION + ".show")
     @Description("Show a ticket")
     @Syntax("<Player> [Index]")
-    public void onShow(CommandSender sender, OfflinePlayer offlinePlayer, @Optional FutureTicket future) {
-        processShowCommand(getCurrentCommandIssuer(), future);
+    public void onShow(User sender, OfflinePlayer offlinePlayer, @Optional FutureTicket future) {
+        processShowCommand(sender, future);
     }
 
     @Subcommand("%pick")
