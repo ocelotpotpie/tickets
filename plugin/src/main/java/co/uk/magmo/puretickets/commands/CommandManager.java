@@ -46,7 +46,6 @@ public class CommandManager extends PaperCommandManager {
 
         //noinspection deprecation
         enableUnstableAPI("help");
-
         getLocales().setDefaultLocale(Locale.forLanguageTag(config.LOCALE));
 
         // Colours
