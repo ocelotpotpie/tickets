@@ -12,6 +12,7 @@ import co.uk.magmo.puretickets.tasks.ReminderTask;
 import co.uk.magmo.puretickets.tasks.TaskManager;
 import co.uk.magmo.puretickets.ticket.Ticket;
 import co.uk.magmo.puretickets.ticket.TicketManager;
+import co.uk.magmo.puretickets.user.User;
 import co.uk.magmo.puretickets.user.UserManager;
 import co.uk.magmo.puretickets.utilities.Constants;
 import co.uk.magmo.puretickets.utilities.generic.ReplacementUtilities;
@@ -22,12 +23,10 @@ import com.google.common.collect.ObjectArrays;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.permissions.ServerOperator;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -35,26 +34,27 @@ import java.util.function.Consumer;
 
 public class NotificationManager implements Listener {
     private final SQLManager sqlManager;
+    private final LocaleManager localeManager;
     private final UserManager userManager;
-    private final CommandManager commandManager;
     private final DiscordManager discordManager;
 
-    private final Multimap<UUID, PendingNotification> awaiting;
+    private final Multimap<UUID, ComposedMessage> awaiting;
 
-    public NotificationManager(Config config, SQLManager sqlManager, TaskManager taskManager, UserManager userManager, CommandManager commandManager, DiscordManager discordManager, TicketManager ticketManager) {
+    public NotificationManager(Config config, SQLManager sqlManager, TaskManager taskManager, LocaleManager localeManager,
+                               UserManager userManager, DiscordManager discordManager, TicketManager ticketManager) {
         this.sqlManager = sqlManager;
+        this.localeManager = localeManager;
         this.userManager = userManager;
-        this.commandManager = commandManager;
         this.discordManager = discordManager;
 
         awaiting = sqlManager.getNotification().selectAllAndClear();
 
-        taskManager.addRepeatingTask(new ReminderTask(ticketManager, this),
+        taskManager.addRepeatingTask(new ReminderTask(localeManager, ticketManager),
                 TimeUtilities.minuteToLong(config.REMINDER__DELAY), TimeUtilities.minuteToLong(config.REMINDER__REPEAT));
     }
 
-    public void send(CommandSender sender, UUID target, MessageNames names, Ticket ticket, Consumer<HashMap<String, String>> addFields) {
-        String[] specificReplacements = {"%user%", sender.getName(), "%target%", UserUtilities.nameFromUUID(target)};
+    public void send(User user, UUID target, MessageNames names, Ticket ticket, Consumer<HashMap<String, String>> addFields) {
+        String[] specificReplacements = {"%user%", user.getName(), "%target%", UserUtilities.nameFromUUID(target)};
         String[] genericReplacements = ReplacementUtilities.ticketReplacements(ticket);
 
         String[] replacements = ObjectArrays.concat(specificReplacements, genericReplacements, String.class);
@@ -64,16 +64,16 @@ public class NotificationManager implements Listener {
 
             switch (targetType) {
                 case SENDER:
-                    senderAsIssuer(sender).sendInfo(message, replacements);
+                    user.message(message, true, replacements);
                     break;
 
                 case NOTIFICATION:
                     OfflinePlayer op = Bukkit.getOfflinePlayer(target);
 
                     if (op.isOnline()) {
-                        senderAsIssuer(op).sendInfo(message, replacements);
+                        user.message(message, true, replacements);
                     } else {
-                        awaiting.put(target, new PendingNotification(message, replacements));
+                        awaiting.put(target, localeManager.composeMessage(message, replacements));
                     }
 
                     break;
@@ -82,10 +82,12 @@ public class NotificationManager implements Listener {
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         if (!player.hasPermission(Constants.STAFF_PERMISSION + ".announce")) continue;
                         if (!userManager.get(player.getUniqueId()).getAnnouncements()) continue;
-                        if (sender instanceof Player && ((Player) sender).getUniqueId() == player.getUniqueId())
-                            continue;
 
-                        senderAsIssuer(player).sendInfo(message, replacements);
+                        UUID uuid = user.getUniqueId();
+
+                        if (uuid != null && uuid == player.getUniqueId()) continue;
+
+                        user.message(message, true, replacements);
                     }
 
                     break;
@@ -97,17 +99,12 @@ public class NotificationManager implements Listener {
                         addFields.accept(fields);
                     }
 
-                    String action = commandManager.formatMessage(senderAsIssuer(Bukkit.getConsoleSender()), MessageType.INFO, message);
-                    action = ChatColor.stripColor(action);
+                    String action = ChatColor.stripColor(localeManager.valueOf(message));
 
                     discordManager.sendInformation(ticket.getStatus().getPureColor().getHex(),
                             UserUtilities.nameFromUUID(ticket.getPlayerUUID()), ticket.getPlayerUUID(), ticket.getId(), action, fields);
             }
         }
-    }
-
-    public void basic(CommandSender commandSender, Messages messageKey, String... replacements) {
-        senderAsIssuer(commandSender).sendInfo(messageKey, replacements);
     }
 
     public void save() {
@@ -116,14 +113,15 @@ public class NotificationManager implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
-        CommandIssuer ci = commandManager.getCommandIssuer(e.getPlayer());
+        UUID uuid = e.getPlayer().getUniqueId();
 
-        awaiting.get(ci.getUniqueId()).forEach(n -> ci.sendInfo(n.getMessageKey(), n.getReplacements()));
+        if (!awaiting.containsKey(uuid)) {
+            return;
+        }
 
-        awaiting.removeAll(ci.getUniqueId());
-    }
+        User user = new User(localeManager, uuid);
+        awaiting.get(uuid).forEach(n -> user.message(n, true));
 
-    private CommandIssuer senderAsIssuer(ServerOperator operator) {
-        return commandManager.getCommandIssuer(operator);
+        awaiting.removeAll(uuid);
     }
 }

@@ -36,4 +36,8 @@ public enum Messages implements LocaleKeys {
     public String getName() {
         return name().toLowerCase().replace("__", ".");
     }
+
+    public static Messages retrieve(TargetType targetType, MessageNames messageNames) {
+        return valueOf(targetType.name() + "__" + messageNames.name());
+    }
 }
