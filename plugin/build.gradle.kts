@@ -9,6 +9,7 @@ version = "3.0.2"
 group = "co.uk.magmo.puretickets"
 
 repositories {
+    mavenLocal()
     mavenCentral()
 
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
@@ -34,7 +35,8 @@ dependencies {
     api("co.aikar:idb-core:1.0.0-SNAPSHOT")
     api("org.slf4j:slf4j-simple:1.7.13")
     api("com.zaxxer:HikariCP:2.7.9")
-    api("co.uk.magmo:corn-spigot:1.0.2")
+    api("ai.broccol:corn-spigot:1.1.2")
+    api("ai.broccol:celery:1.0.0")
     api("com.intellectualsites.http:HTTP4J:1.3-SNAPSHOT")
 
     compileOnly("org.spigotmc:spigot-api:1.16.1-R0.1-SNAPSHOT")
@@ -54,7 +56,7 @@ tasks {
         relocate("co.aikar.locales", base + "locales")
         relocate("co.aikar.idb", base + "idb")
 
-        relocate("co.uk.magmo.corn.core", base + "corn.core")
+        relocate("ai.broccol.corn.core", base + "corn.core")
 
         relocate("com.zaxxer.hikari", base + "hikari")
         relocate("net.jodah.expiringmap", base + "expiringmap")
