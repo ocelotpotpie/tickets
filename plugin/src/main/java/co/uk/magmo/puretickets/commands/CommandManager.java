@@ -1,11 +1,10 @@
 package co.uk.magmo.puretickets.commands;
 
+import ai.broccol.corn.core.Lists;
+import ai.broccol.corn.spigot.locale.LocaleManager;
 import co.aikar.commands.InvalidCommandArgument;
 import co.aikar.commands.MessageType;
 import co.aikar.commands.PaperCommandManager;
-import co.uk.magmo.corn.core.Lists;
-import co.uk.magmo.corn.spigot.locale.LocaleManager;
-import co.uk.magmo.corn.spigot.locale.LocaleUtils;
 import co.uk.magmo.puretickets.configuration.Config;
 import co.uk.magmo.puretickets.locale.Messages;
 import co.uk.magmo.puretickets.storage.TimeAmount;
@@ -20,29 +19,18 @@ import co.uk.magmo.puretickets.utilities.generic.NumberUtilities;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 
-import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class CommandManager extends PaperCommandManager {
-    private final LocaleManager localeManager;
 
-    public CommandManager(Plugin plugin, Config config, TicketManager ticketManager) {
+    public CommandManager(Plugin plugin, Config config, LocaleManager localeManager, TicketManager ticketManager) {
         super(plugin);
-
-        Map<Locale, FileConfiguration> locales = LocaleUtils.saveLocales(plugin,
-                new File(plugin.getDataFolder(), "locales"), "/locales");
-
-        localeManager = new LocaleManager(locales.get(Locale.ENGLISH), Messages.PREFIX);
-
-        localeManager.registerKeys(Messages.class);
 
         //noinspection deprecation
         enableUnstableAPI("help");
@@ -52,7 +40,7 @@ public class CommandManager extends PaperCommandManager {
         setFormat(MessageType.HELP, ChatColor.WHITE, ChatColor.AQUA, ChatColor.DARK_GRAY);
         setFormat(MessageType.INFO, ChatColor.WHITE, ChatColor.AQUA, ChatColor.DARK_GRAY);
 
-        getCommandContexts().registerIssuerOnlyContext(User.class, c -> new User(c.getSender()));
+        getCommandContexts().registerIssuerOnlyContext(User.class, c -> new User(localeManager, c.getSender()));
 
         // Contexts
         getCommandContexts().registerOptionalContext(FutureTicket.class, c -> {
@@ -66,7 +54,7 @@ public class CommandManager extends PaperCommandManager {
 
                     if (ticket == null || (c.hasFlag("issuer") && !ticket.getPlayerUUID().equals(c.getPlayer().getUniqueId()))) {
                         future.complete(null);
-                        new User(c.getSender()).message(localeManager.composeMessage(Messages.EXCEPTIONS__TICKET_NOT_FOUND), true);
+                        new User(localeManager, c.getSender()).message(localeManager.composeMessage(Messages.EXCEPTIONS__TICKET_NOT_FOUND), true);
                         return;
                     }
 
@@ -97,7 +85,7 @@ public class CommandManager extends PaperCommandManager {
 
                 if (potentialTicket == null) {
                     future.complete(null);
-                    new User(c.getSender()).message(localeManager.composeMessage(Messages.EXCEPTIONS__TICKET_NOT_FOUND), true);
+                    new User(localeManager, c.getSender()).message(localeManager.composeMessage(Messages.EXCEPTIONS__TICKET_NOT_FOUND), true);
                     return;
                 }
 
