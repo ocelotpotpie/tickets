@@ -1,5 +1,6 @@
 package co.uk.magmo.puretickets.storage;
 
+import ai.broccol.corn.spigot.locale.LocaleManager;
 import co.uk.magmo.puretickets.configuration.Config;
 import co.uk.magmo.puretickets.storage.functions.HelpersSQL;
 import co.uk.magmo.puretickets.storage.functions.MessageSQL;
@@ -20,7 +21,7 @@ public class SQLManager {
     NotificationSQL notification;
     SettingsSQL setting;
 
-    public SQLManager(Plugin plugin, Config config) {
+    public SQLManager(Plugin plugin, LocaleManager localeManager, Config config) {
         if (config.STORAGE__MYSQL) {
             platform = new MySQL();
         } else {
@@ -29,7 +30,7 @@ public class SQLManager {
 
         ticket = new TicketFunctions(helpers, platform);
         message = new MessageSQL(helpers);
-        notification = new NotificationSQL(helpers);
+        notification = new NotificationSQL(helpers, localeManager);
         setting = new SettingsSQL(platform);
 
         helpers.setup(platform, message);

@@ -1,8 +1,10 @@
 package co.uk.magmo.puretickets.storage.functions;
 
+import ai.broccol.corn.spigot.locale.ComposedMessage;
+import ai.broccol.corn.spigot.locale.LocaleManager;
 import co.aikar.idb.DB;
 import co.aikar.idb.DbRow;
-import co.uk.magmo.puretickets.interactions.PendingNotification;
+import co.uk.magmo.puretickets.locale.Messages;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.bukkit.Bukkit;
@@ -13,13 +15,15 @@ import java.util.UUID;
 
 public class NotificationSQL {
     private final HelpersSQL helpers;
+    private final LocaleManager localeManager;
 
-    public NotificationSQL(HelpersSQL helpers) {
+    public NotificationSQL(HelpersSQL helpers, LocaleManager localeManager) {
         this.helpers = helpers;
+        this.localeManager = localeManager;
     }
 
-    public Multimap<UUID, PendingNotification> selectAllAndClear() {
-        Multimap<UUID, PendingNotification> output = ArrayListMultimap.create();
+    public Multimap<UUID, ComposedMessage> selectAllAndClear() {
+        Multimap<UUID, ComposedMessage> output = ArrayListMultimap.create();
         List<DbRow> results;
 
         try {
@@ -31,17 +35,21 @@ public class NotificationSQL {
 
         for (DbRow result : results) {
             UUID uuid = helpers.getUUID(result, "uuid");
-            PendingNotification notification = helpers.buildNotification(result);
 
-            output.put(uuid, notification);
+            Messages key = helpers.getEnumValue(result, Messages.class, "message");
+            String[] replacements = result.getString("replacements").split("\\|");
+
+            ComposedMessage message = localeManager.composeMessage(key, replacements);
+
+            output.put(uuid, message);
         }
 
         return output;
     }
 
-    public void insertAll(Multimap<UUID, PendingNotification> notifications) {
+    public void insertAll(Multimap<UUID, ComposedMessage> notifications) {
         notifications.forEach(((uuid, notification) -> {
-            String message = notification.getMessageKey().name();
+            String message = notification.getKey().getName();
             String replacements = String.join("|", notification.getReplacements());
 
             try {

@@ -1,8 +1,6 @@
 package co.uk.magmo.puretickets.storage.functions;
 
 import co.aikar.idb.DbRow;
-import co.uk.magmo.puretickets.interactions.PendingNotification;
-import co.uk.magmo.puretickets.locale.Messages;
 import co.uk.magmo.puretickets.storage.platforms.Platform;
 import co.uk.magmo.puretickets.ticket.Message;
 import co.uk.magmo.puretickets.ticket.MessageReason;
@@ -92,12 +90,5 @@ public class HelpersSQL {
         UUID sender = getUUID(row, "sender");
 
         return new Message(reason, date, data, sender);
-    }
-
-    PendingNotification buildNotification(DbRow row) {
-        Messages message = getEnumValue(row, Messages.class, "message");
-        String[] replacements = row.getString("replacements").split("\\|");
-
-        return new PendingNotification(message, replacements);
     }
 }
