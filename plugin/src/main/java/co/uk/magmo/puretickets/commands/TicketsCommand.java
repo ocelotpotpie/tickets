@@ -7,7 +7,7 @@ import co.aikar.commands.annotation.Description;
 import co.aikar.commands.annotation.Optional;
 import co.aikar.commands.annotation.Subcommand;
 import co.aikar.commands.annotation.Syntax;
-import co.uk.magmo.corn.core.Lists;
+import ai.broccol.corn.core.Lists;
 import co.uk.magmo.puretickets.exceptions.PureException;
 import co.uk.magmo.puretickets.locale.MessageNames;
 import co.uk.magmo.puretickets.locale.Messages;

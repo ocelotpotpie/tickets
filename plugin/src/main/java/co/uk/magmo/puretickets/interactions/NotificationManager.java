@@ -1,8 +1,7 @@
 package co.uk.magmo.puretickets.interactions;
 
-import co.aikar.commands.CommandIssuer;
-import co.aikar.commands.MessageType;
-import co.uk.magmo.puretickets.commands.CommandManager;
+import ai.broccol.corn.spigot.locale.ComposedMessage;
+import ai.broccol.corn.spigot.locale.LocaleManager;
 import co.uk.magmo.puretickets.configuration.Config;
 import co.uk.magmo.puretickets.integrations.DiscordManager;
 import co.uk.magmo.puretickets.locale.MessageNames;

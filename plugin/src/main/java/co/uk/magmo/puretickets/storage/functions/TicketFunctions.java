@@ -2,7 +2,7 @@ package co.uk.magmo.puretickets.storage.functions;
 
 import co.aikar.idb.DB;
 import co.aikar.idb.DbRow;
-import co.uk.magmo.corn.core.Lists;
+import ai.broccol.corn.core.Lists;
 import co.uk.magmo.puretickets.storage.TimeAmount;
 import co.uk.magmo.puretickets.storage.platforms.Platform;
 import co.uk.magmo.puretickets.ticket.Ticket;

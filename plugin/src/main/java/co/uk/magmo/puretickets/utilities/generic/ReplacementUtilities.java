@@ -1,6 +1,6 @@
 package co.uk.magmo.puretickets.utilities.generic;
 
-import co.uk.magmo.corn.core.Lists;
+import ai.broccol.corn.core.Lists;
 import co.uk.magmo.puretickets.ticket.Message;
 import co.uk.magmo.puretickets.ticket.MessageReason;
 import co.uk.magmo.puretickets.ticket.Ticket;

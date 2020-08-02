@@ -1,6 +1,6 @@
 package co.uk.magmo.puretickets.locale;
 
-import co.uk.magmo.corn.spigot.locale.LocaleKeys;
+import ai.broccol.corn.spigot.locale.LocaleKeys;
 import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("unused")

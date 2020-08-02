@@ -1,6 +1,6 @@
 package co.uk.magmo.puretickets.ticket;
 
-import co.uk.magmo.corn.core.Lists;
+import ai.broccol.corn.core.Lists;
 import com.google.common.collect.Iterables;
 import org.bukkit.Location;
 import org.jetbrains.annotations.Nullable;

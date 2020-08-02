@@ -6,7 +6,7 @@ import co.aikar.commands.CommandIssuer;
 import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Dependency;
 import co.aikar.commands.annotation.HelpCommand;
-import co.uk.magmo.corn.spigot.locale.LocaleManager;
+import ai.broccol.corn.spigot.locale.LocaleManager;
 import co.uk.magmo.puretickets.configuration.Config;
 import co.uk.magmo.puretickets.interactions.NotificationManager;
 import co.uk.magmo.puretickets.locale.Messages;
