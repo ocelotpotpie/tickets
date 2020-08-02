@@ -13,9 +13,9 @@ import co.uk.magmo.puretickets.PureTickets;
 import co.uk.magmo.puretickets.exceptions.InvalidSettingType;
 import co.uk.magmo.puretickets.interactions.NotificationManager;
 import co.uk.magmo.puretickets.locale.Messages;
+import co.uk.magmo.puretickets.user.User;
 import co.uk.magmo.puretickets.user.UserManager;
 import co.uk.magmo.puretickets.utilities.Constants;
-import org.bukkit.entity.Player;
 
 @SuppressWarnings("unused")
 @CommandAlias("puretickets")
@@ -36,8 +36,8 @@ public class PureTicketsCommand extends BaseCommand {
     @Subcommand("settings")
     @CommandPermission(Constants.USER_PERMISSION + ".settings")
     @CommandCompletion("announcements true|false")
-    public void onSettings(Player player, String setting, @Optional Boolean value) {
-        userManager.update(player.getUniqueId(), settings -> {
+    public void onSettings(User user, String setting, @Optional Boolean value) {
+        userManager.update(user.getUniqueId(), settings -> {
             switch (setting.toLowerCase()) {
                 case "announcements":
                     settings.setAnnouncements(value);
@@ -50,7 +50,7 @@ public class PureTicketsCommand extends BaseCommand {
 
         String status = value ? "enabled" : "disabled";
 
-        notificationManager.basic(player, Messages.OTHER__SETTING_UPDATE, "%setting%", setting, "%status%", status);
+        user.message(Messages.OTHER__SETTING_UPDATE, true, "%setting%", setting, "%status%", status);
     }
 
     @Subcommand("reload")

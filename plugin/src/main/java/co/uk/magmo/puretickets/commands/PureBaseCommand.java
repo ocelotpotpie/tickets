@@ -1,12 +1,11 @@
 package co.uk.magmo.puretickets.commands;
 
+import ai.broccol.corn.spigot.locale.LocaleManager;
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.CommandHelp;
-import co.aikar.commands.CommandIssuer;
 import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Dependency;
 import co.aikar.commands.annotation.HelpCommand;
-import ai.broccol.corn.spigot.locale.LocaleManager;
 import co.uk.magmo.puretickets.configuration.Config;
 import co.uk.magmo.puretickets.interactions.NotificationManager;
 import co.uk.magmo.puretickets.locale.Messages;
@@ -49,33 +48,34 @@ public class PureBaseCommand extends BaseCommand {
                 .abortIfNull()
                 .asyncLast((ticket) -> {
                     String[] replacements = ReplacementUtilities.ticketReplacements(ticket);
+                    localeManager.composeMessage(Messages.TITLES__SHOW_TICKET, replacements);
 
-                    user.message(Messages.TITLES__SHOW_TICKET, replacements);
-                    issuer.sendInfo(Messages.SHOW__SENDER, replacements);
-                    issuer.sendInfo(Messages.SHOW__MESSAGE, replacements);
+                    user.message(Messages.TITLES__SHOW_TICKET, false, replacements);
+                    user.message(Messages.SHOW__SENDER, false, replacements);
+                    user.message(Messages.SHOW__MESSAGE, false, replacements);
 
                     if (ticket.getStatus() != TicketStatus.PICKED) {
-                        issuer.sendInfo(Messages.SHOW__UNPICKED);
+                        user.message(Messages.SHOW__UNPICKED, false);
                     } else {
-                        issuer.sendInfo(Messages.SHOW__PICKER, replacements);
+                        user.message(Messages.SHOW__PICKER, false, replacements);
                     }
                 })
                 .execute();
     }
 
-    protected void processLogCommand(CommandIssuer issuer, FutureTicket future) {
+    protected void processLogCommand(User user, FutureTicket future) {
         taskManager.use()
                 .future(future)
                 .abortIfNull()
                 .asyncLast((ticket) -> {
                     String[] replacements = ReplacementUtilities.ticketReplacements(ticket);
 
-                    issuer.sendInfo(Messages.TITLES__TICKET_LOG, replacements);
+                    user.message(Messages.TITLES__TICKET_LOG, false, replacements);
 
                     ticket.getMessages().forEach(message -> {
                         String suffix = message.getData() != null ? message.getData() : UserUtilities.nameFromUUID(message.getSender());
 
-                        issuer.sendInfo(Messages.GENERAL__LOG_FORMAT, "%reason%", message.getReason().name(),
+                        user.message(Messages.GENERAL__LOG_FORMAT, false, "%reason%", message.getReason().name(),
                                 "%date%", TimeUtilities.formatted(message.getDate()), "%suffix%", suffix);
                     });
                 })

@@ -1,5 +1,6 @@
 package co.uk.magmo.puretickets.commands;
 
+import ai.broccol.corn.core.Lists;
 import co.aikar.commands.annotation.CommandAlias;
 import co.aikar.commands.annotation.CommandCompletion;
 import co.aikar.commands.annotation.CommandPermission;
@@ -8,7 +9,6 @@ import co.aikar.commands.annotation.Flags;
 import co.aikar.commands.annotation.Optional;
 import co.aikar.commands.annotation.Subcommand;
 import co.aikar.commands.annotation.Syntax;
-import ai.broccol.corn.core.Lists;
 import co.uk.magmo.puretickets.exceptions.PureException;
 import co.uk.magmo.puretickets.locale.MessageNames;
 import co.uk.magmo.puretickets.locale.Messages;
@@ -16,9 +16,9 @@ import co.uk.magmo.puretickets.ticket.FutureTicket;
 import co.uk.magmo.puretickets.ticket.Message;
 import co.uk.magmo.puretickets.ticket.Ticket;
 import co.uk.magmo.puretickets.ticket.TicketStatus;
+import co.uk.magmo.puretickets.user.User;
 import co.uk.magmo.puretickets.utilities.Constants;
 import co.uk.magmo.puretickets.utilities.generic.ReplacementUtilities;
-import org.bukkit.entity.Player;
 
 import java.util.List;
 
@@ -30,15 +30,15 @@ public class TicketCommand extends PureBaseCommand {
     @CommandPermission(Constants.USER_PERMISSION + ".create")
     @Description("Create a ticket")
     @Syntax("<Message>")
-    public void onCreate(Player player, Message message) {
+    public void onCreate(User user, Message message) {
         taskManager.use()
                 .async(() -> {
                     try {
-                        Ticket ticket = ticketManager.createTicket(player, message);
-                        notificationManager.send(player, null, MessageNames.NEW_TICKET, ticket,
+                        Ticket ticket = ticketManager.createTicket(user.asPlayer(), message);
+                        notificationManager.send(user, null, MessageNames.NEW_TICKET, ticket,
                                 fields -> fields.put("MESSAGE", message.getData()));
                     } catch (PureException e) {
-                        notificationManager.basic(player, e.getMessageKey(), e.getReplacements());
+                        user.message(e.getMessageKey(), true, e.getReplacements());
                     }
                 })
                 .execute();
@@ -49,17 +49,17 @@ public class TicketCommand extends PureBaseCommand {
     @CommandPermission(Constants.USER_PERMISSION + ".update")
     @Description("Update a ticket")
     @Syntax("<Index> <Message>")
-    public void onUpdate(Player player, @Flags("issuer") FutureTicket future, Message message) {
+    public void onUpdate(User user, @Flags("issuer") FutureTicket future, Message message) {
         taskManager.use()
                 .future(future)
                 .abortIfNull()
                 .asyncLast((ticket) -> {
                     try {
                         Ticket edited = ticketManager.update(ticket, message);
-                        notificationManager.send(player, null, MessageNames.UPDATE_TICKET, edited,
+                        notificationManager.send(user, null, MessageNames.UPDATE_TICKET, edited,
                                 fields -> fields.put("MESSAGE", message.getData()));
                     } catch (PureException e) {
-                        notificationManager.basic(player, e.getMessageKey(), e.getReplacements());
+                        user.message(e.getMessageKey(), true, e.getReplacements());
                     }
                 })
                 .execute();
@@ -70,16 +70,16 @@ public class TicketCommand extends PureBaseCommand {
     @CommandPermission(Constants.USER_PERMISSION + ".close")
     @Description("Close a ticket")
     @Syntax("[Index]")
-    public void onClose(Player player, @Optional @AutoStatuses("OPEN,PICKED") @Flags("issuer") FutureTicket future) {
+    public void onClose(User user, @Optional @AutoStatuses("OPEN,PICKED") @Flags("issuer") FutureTicket future) {
         taskManager.use()
                 .future(future)
                 .abortIfNull()
                 .asyncLast((ticket) -> {
                     try {
-                        Ticket edited = ticketManager.close(player.getUniqueId(), ticket);
-                        notificationManager.send(player, null, MessageNames.CLOSE_TICKET, edited, null);
+                        Ticket edited = ticketManager.close(user.getUniqueId(), ticket);
+                        notificationManager.send(user, null, MessageNames.CLOSE_TICKET, edited, null);
                     } catch (PureException e) {
-                        notificationManager.basic(player, e.getMessageKey(), e.getReplacements());
+                        user.message(e.getMessageKey(), true, e.getReplacements());
                     }
                 })
                 .execute();
@@ -90,8 +90,8 @@ public class TicketCommand extends PureBaseCommand {
     @CommandPermission(Constants.USER_PERMISSION + ".show")
     @Description("Show a ticket")
     @Syntax("[Index]")
-    public void onShow(Player player, @Optional @Flags("issuer") FutureTicket future) {
-        processShowCommand(getCurrentCommandIssuer(), future);
+    public void onShow(User user, @Optional @Flags("issuer") FutureTicket future) {
+        processShowCommand(user, future);
     }
 
     @Subcommand("%list")
@@ -99,20 +99,20 @@ public class TicketCommand extends PureBaseCommand {
     @CommandPermission(Constants.USER_PERMISSION + ".list")
     @Description("List all tickets")
     @Syntax("[Status]")
-    public void onList(Player player, @Optional TicketStatus status) {
+    public void onList(User user, @Optional TicketStatus status) {
         taskManager.use()
                 .async(() -> {
-                    List<Ticket> tickets = ticketManager.getAll(player.getUniqueId(), null);
+                    List<Ticket> tickets = ticketManager.getAll(user.getUniqueId(), null);
 
                     tickets = Lists.filter(tickets, ticket ->
                             status == null ? ticket.getStatus() != TicketStatus.CLOSED : ticket.getStatus() == status
                     );
 
-                    notificationManager.basic(player, Messages.TITLES__YOUR_TICKETS);
+                    user.message(Messages.TITLES__YOUR_TICKETS, false);
 
                     tickets.forEach(ticket -> {
                         String[] replacements = ReplacementUtilities.ticketReplacements(ticket);
-                        notificationManager.basic(player, Messages.GENERAL__LIST_FORMAT, replacements);
+                        user.message(Messages.GENERAL__LIST_FORMAT, false, replacements);
                     });
                 })
                 .execute();
@@ -123,7 +123,7 @@ public class TicketCommand extends PureBaseCommand {
     @CommandPermission(Constants.USER_PERMISSION + ".log")
     @Description("Log tickets messages")
     @Syntax("[Index]")
-    public void onLog(Player player, @Optional @Flags("issuer") FutureTicket future) {
-        processLogCommand(getCurrentCommandIssuer(), future);
+    public void onLog(User user, @Optional @Flags("issuer") FutureTicket future) {
+        processLogCommand(user, future);
     }
 }
