@@ -43,7 +43,9 @@ public class MySQL implements Platform {
 
             version = DB.getFirstColumn("SELECT version FROM puretickets_sql");
         } catch (SQLException e) {
+            e.printStackTrace();
             Bukkit.getPluginManager().disablePlugin(plugin);
+            return;
         }
 
         try {
@@ -65,11 +67,13 @@ public class MySQL implements Platform {
                 version++;
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             Bukkit.getPluginManager().disablePlugin(plugin);
         } finally {
             try {
                 DB.executeUpdate("UPDATE puretickets_sql SET version = ?", version);
             } catch (SQLException e) {
+                e.printStackTrace();
                 Bukkit.getPluginManager().disablePlugin(plugin);
             }
         }
